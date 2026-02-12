@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0D2334">
+    <title>Inventario Pro - V25 (Final)</title>
+    <style>
+        /* --- IDENTIDAD VISUAL --- */
+        :root {
+            --navy-main: #0D2334;
+            --red-accent: #D70F27;
+            --bg-body: #F4F6F9;
+            --bg-card: #FFFFFF;
+            --text-main: #0D2334;
+            --text-muted: #64748B;
+            --input-bg: #E2E8F0;
+            --input-text: #0D2334;
+            --input-placeholder: rgba(13, 35, 52, 0.35);
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --info: #3B82F6;
+        }
+
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 40px;
+        }
+
+        /* --- HEADER --- */
+        header {
+            background-color: var(--navy-main);
+            color: white;
+            padding: 10px 16px 0 16px;
+            box-shadow: 0 4px 12px rgba(13, 35, 52, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-top {
+            display: grid;
+            grid-template-columns: 60px 1fr 60px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .header-logo {
+            height: 35px; width: auto; object-fit: contain;
+            background: white; border-radius: 4px; padding: 2px;
+        }
+
+        h1 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: 0.5px; text-align: center; }
+
+        .header-btn-upload {
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+            color: white; border-radius: 8px; width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; cursor: pointer; justify-self: end;
+        }
+
+        /* --- TABS --- */
+        .tabs { display: flex; gap: 20px; justify-content: center; }
+        .tab-btn {
+            background: transparent; border: none; color: rgba(255, 255, 255, 0.6);
+            font-size: 14px; font-weight: 500; padding-bottom: 12px;
+            cursor: pointer; position: relative; flex: 1; text-align: center; max-width: 120px;
+        }
+        .tab-btn.active { color: white; font-weight: 700; }
+        .tab-btn.active::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 4px;
+            background-color: var(--red-accent); border-radius: 4px 4px 0 0;
+        }
+
+        /* --- LAYOUT --- */
+        .container { padding: 16px; max-width: 600px; margin: 0 auto; }
+        .view { display: none; animation: fadeIn 0.3s ease; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card {
+            background: var(--bg-card); border-radius: 12px; padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 12px;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        /* --- INPUTS --- */
+        label {
+            display: block; font-size: 11px; font-weight: 700; color: var(--navy-main);
+            margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
+        .input-wrapper { position: relative; margin-bottom: 15px; }
+        
+        input {
+            width: 100%; padding: 14px 10px 14px 14px;
+            font-size: 16px; font-weight: 500; border: none; border-radius: 8px;
+            background-color: var(--input-bg); color: var(--input-text); transition: all 0.2s;
+        }
+        input:disabled { background-color: #CBD5E1; color: #64748B; border: 1px solid #94A3B8; opacity: 0.8; }
+        input::placeholder { color: var(--input-placeholder); }
+        input:focus { background-color: #fff; box-shadow: 0 0 0 2px var(--navy-main); }
+        
+        input.error-shake {
+            animation: shake 0.4s;
+            box-shadow: 0 0 0 2px var(--danger);
+            background-color: #FEF2F2;
+        }
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
+
+        .input-action-btn {
+            position: absolute; right: 4px; top: 4px; bottom: 4px; width: 44px;
+            background: var(--navy-main); color: white; border: none; border-radius: 6px; 
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .input-action-btn:active { transform: scale(0.95); }
+        .input-action-btn svg { width: 20px; height: 20px; fill: currentColor; }
+
+        /* --- BOTONES --- */
+        .btn {
+            width: 100%; padding: 14px; border-radius: 8px; border: none;
+            font-size: 15px; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background-color: var(--red-accent); color: white; box-shadow: 0 4px 6px rgba(215, 15, 39, 0.25); }
+        .btn-secondary { background-color: var(--input-bg); color: var(--navy-main); }
+        .btn-navy { background-color: var(--navy-main); color: white; }
+        .btn-email { background-color: var(--success); color: white; } 
+        .btn-danger-block { background-color: var(--danger); color: white; }
+        
+        .btn-delete {
+            background: #FEE2E2; color: #991B1B; border: none; border-radius: 6px;
+            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        .btn-delete:active { background: #FECACA; transform: scale(0.95); }
+
+        .btn-lock {
+            background: var(--navy-main); color: white; border: none; border-radius: 8px;
+            width: 100%; height: 100%; font-size: 12px; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+            transition: all 0.3s ease;
+        }
+        .btn-lock.locked { background: var(--success); }
+
+        /* --- ALERTAS --- */
+        .master-alert {
+            background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B;
+            padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 500;
+            display: flex; align-items: center; gap: 10px; margin-bottom: 15px;
+        }
+
+        /* --- MODAL --- */
+        #modal-overlay, #intruder-modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(13, 35, 52, 0.85); z-index: 1000;
+            align-items: center; justify-content: center;
+        }
+        
+        .modal-box {
+            background: white; width: 90%; max-width: 340px; border-radius: 16px; padding: 24px;
+            text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+        }
+        .modal-box.error-mode { border: 4px solid var(--danger); }
+        .modal-box.error-mode #modal-icon { animation: pulse 1s infinite; }
+        
+        .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; color: var(--navy-main); }
+        .error-mode .modal-title { color: var(--danger); }
+        
+        .modal-msg { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+        .modal-btn { width: 100%; padding: 12px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; }
+        
+        .modal-btn.danger { background: var(--red-accent); color: white; margin-bottom: 8px; }
+        .modal-btn.intruder { background: var(--warning); color: white; margin-bottom: 8px; }
+        .modal-btn.cancel { background: var(--input-bg); color: var(--navy-main); }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+        /* --- CÁMARA --- */
+        #camera-container {
+            display: none; position: relative; margin-bottom: 15px; border-radius: 12px;
+            overflow: hidden; background: black; border: 4px solid var(--red-accent);
+        }
+        video { width: 100%; display: block; }
+        .camera-overlay {
+            position: absolute; bottom: 10px; left: 0; right: 0; text-align: center;
+            color: white; font-weight: 700; text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+        }
+
+        /* --- TABLA --- */
+        .table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 750px; }
+        th { background: var(--navy-main); color: white; padding: 10px 8px; text-align: left; font-size: 12px; white-space: nowrap; }
+        td { padding: 10px 8px; border-bottom: 1px solid #eee; color: var(--text-main); vertical-align: middle; white-space: nowrap; }
+        
+        .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .bg-ok { background: #DCFCE7; color: #166534; }
+        .bg-err { background: #FEE2E2; color: #991B1B; }
+        .bg-empty { background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; }
+
+        input[type="file"] { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- CABECERA -->
+    <header>
+        <div class="header-top">
+            <img src="image_56df08.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
+            <h1>INVENTARIO</h1>
+            <button class="header-btn-upload" onclick="document.getElementById('csv-file').click()" title="Cargar Maestro">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </button>
+            <input type="file" id="csv-file" accept=".csv" onchange="processMasterFile(this)">
+        </div>
+        
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchView('conteo')">CONTEO</button>
+            <button class="tab-btn" onclick="switchView('historial')">HISTORIAL (<span id="count-badge">0</span>)</button>
+        </div>
+    </header>
+
+    <!-- VISTA 1: CONTEO -->
+    <div id="view-conteo" class="view active container">
+        
+        <div id="master-alert-box" class="master-alert">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <div><strong>ATENCIÓN:</strong> Carga el archivo maestro (5 cols) para comenzar.</div>
+        </div>
+        <div id="master-success-box" class="master-alert" style="display:none; background:#DCFCE7; border-color:#86EFAC; color:#166534;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            <div id="master-info-text">Maestro cargado correctamente.</div>
+        </div>
+
+        <div class="card">
+            <div class="input-row">
+                <div>
+                    <label>Usuario</label>
+                    <input type="text" id="user" value="" placeholder="Nombre">
+                </div>
+                <div>
+                    <label>Zona (Prefijo)</label>
+                    <input type="text" id="zone-filter" placeholder="Ej: A1" maxlength="3" style="text-transform:uppercase;">
+                </div>
+            </div>
+            <!-- Rango de Intrusos con Bloqueo -->
+            <label style="margin-top:10px;">CONFIGURACIÓN INTRUSOS</label>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 80px; gap:8px; align-items:end; margin-bottom:0;">
+                <div>
+                    <label style="font-size:9px; color:#64748B;">INICIO</label>
+                    <input type="number" id="intruder-start" value="1" placeholder="1">
+                </div>
+                <div>
+                    <label style="font-size:9px; color:#64748B;">FIN</label>
+                    <input type="number" id="intruder-end" value="300" placeholder="300">
+                </div>
+                <div style="height: 52px; padding-bottom:2px;">
+                    <button id="btn-lock-range" class="btn-lock" onclick="toggleRangeLock()">
+                        <span></span> FIJAR
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CÁMARA VIDEO -->
+        <div id="camera-container">
+            <video id="video" playsinline muted autoplay></video>
+            <div class="camera-overlay">APUNTE AL CÓDIGO</div>
+            <button onclick="stopCamera()" style="position: absolute; top:10px; right:10px; background:rgba(0,0,0,0.5); border:none; color:white; width:30px; height:30px; border-radius:50%; font-weight:bold;">✕</button>
+        </div>
+
+        <!-- INPUT OCULTO PARA FALLBACK DE CÁMARA (FOTO) -->
+        <input type="file" id="scan-fallback" accept="image/*" capture="environment" hidden>
+
+        <div class="card">
+            <div class="input-wrapper">
+                <label>Ubicación</label>
+                <input type="text" id="location" placeholder="Escanee ubicación">
+                <button class="input-action-btn" onclick="startCamera('location')">
+                    <svg viewBox="0 0 24 24"><path d="M3 5h2v14H3V5zm4 0h1v14H7V5zm3 0h2v14h-2V5zm5 0h1v14h-1V5zm3 0h2v14h-2V5z"/></svg>
+                </button>
+            </div>
+
+            <div class="input-wrapper">
+                <label>Material</label>
+                <input type="text" id="material" placeholder="Escanee material">
+                <button class="input-action-btn" onclick="startCamera('material')">
+                    <svg viewBox="0 0 24 24"><path d="M3 5h2v14H3V5zm4 0h1v14H7V5zm3 0h2v14h-2V5zm5 0h1v14h-1V5zm3 0h2v14h-2V5z"/></svg>
+                </button>
+            </div>
+
+            <div class="input-wrapper">
+                <label>Cantidad</label>
+                <input type="number" id="qty" placeholder="0" inputmode="numeric">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="clearForm()">LIMPIAR</button>
+                <button class="btn btn-primary" onclick="validateAndSave()">GUARDAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA 2: HISTORIAL -->
+    <div id="view-historial" class="view container">
+        <div class="card" style="display:flex; flex-direction:column; gap:10px;">
+            <span style="font-size:12px; font-weight:bold; color:var(--text-muted);">Acciones Globales</span>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+                <button class="btn btn-navy" onclick="exportCSV()" style="padding: 10px; font-size:12px;">DESCARGAR</button>
+                <button class="btn btn-email" onclick="sendByEmail()" style="padding: 10px; font-size:12px;">ENVIAR MAIL</button>
+                <button class="btn btn-danger-block" onclick="resetAllProtected()" style="padding: 10px; font-size:12px; border-radius:8px;">BORRAR TODO</button>
+            </div>
+        </div>
+
+        <div class="card" style="padding: 0; overflow: hidden;">
+            <div class="table-wrap">
+                <table id="records-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Ubicación</th>
+                            <th>Material</th>
+                            <th>Doc</th>
+                            <th>Alm.</th>
+                            <th>Cant.</th>
+                            <th>Est.</th>
+                            <th style="width: 40px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="records-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE ALERTA GENERAL -->
+    <div id="modal-overlay">
+        <div class="modal-box" id="modal-box">
+            <div id="modal-icon" style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
+            <div class="modal-title" id="modal-title">Atención</div>
+            <div class="modal-msg" id="modal-msg">Mensaje de alerta</div>
+            <button class="modal-btn danger" id="modal-confirm-btn">Confirmar</button>
+            <!-- Botón Intruso -->
+            <button class="modal-btn intruder" id="modal-intruder-btn" style="display:none;">REGISTRAR INTRUSO</button>
+            <button class="modal-btn cancel" onclick="closeModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- MODAL ESPECÍFICO PARA INTRUSO -->
+    <div id="intruder-modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title">REGISTRAR INTRUSO</div>
+            <div style="font-size: 14px; color: #64748B;">Asignando a ubicación:</div>
+            <div id="intruder-location-display" style="font-size: 32px; font-weight: 900; color: #D70F27; margin: 15px 0; text-transform: uppercase; letter-spacing: 1px;"></div>
+            
+            <div style="font-size: 14px; margin-bottom: 5px;">Material: <span id="intruder-material-display" style="font-weight:bold; color: #0D2334;"></span></div>
+            
+            <label style="text-align:left; display:block; margin-top:15px;">Ingrese Cantidad:</label>
+            <input type="number" id="intruder-qty-input" placeholder="0" style="margin-bottom: 20px; text-align: center; font-size: 20px; font-weight: bold;">
+            
+            <button class="btn btn-primary" id="btn-save-intruder">GUARDAR INTRUSO</button>
+            <button class="btn btn-secondary" onclick="closeIntruderModal()" style="margin-top: 8px;">CANCELAR</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURACIÓN ---
+        const ADMIN_PASSWORD = "cargo123";
+        const EMAIL_RECIPIENTS = "lvilla@grupocargo.com,falvarado@grupocargo.com";
+
+        // --- ESTADO ---
+        let masterData = new Map();
+        let MASTER_CODES = new Set(); 
+        
+        let records = JSON.parse(localStorage.getItem('inv_data_v25')) || [];
+        let intruderConfig = JSON.parse(localStorage.getItem('inv_config_v25')) || { start: 1, end: 300, locked: false };
+
+        let scanningTarget = null;
+        let barcodeDetector = null;
+        let pendingSaveData = null;
+        let forcePhotoFallback = false; 
+        let currentIntruderData = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTable();
+            checkBarcodeSupport();
+            loadIntruderConfig(); 
+            
+            setupAutoAdvance('location', 'material', 'location'); 
+            setupAutoAdvance('material', 'qty', 'material');
+            setupAutoAdvance('qty', 'SAVE', 'save');
+
+            document.getElementById('scan-fallback').addEventListener('change', handleFallbackImage);
+            
+            document.getElementById('intruder-qty-input').addEventListener('keydown', (e) => {
+                if(e.key === 'Enter') confirmIntruderSave();
+            });
+            document.getElementById('btn-save-intruder').addEventListener('click', confirmIntruderSave);
+        });
+
+        // --- GESTIÓN DE CONFIGURACIÓN INTRUSO (BLOQUEO) ---
+        function loadIntruderConfig() {
+            document.getElementById('intruder-start').value = intruderConfig.start;
+            document.getElementById('intruder-end').value = intruderConfig.end;
+            updateLockUI();
+        }
+
+        function toggleRangeLock() {
+            if (intruderConfig.locked) {
+                const pwd = prompt( "SEGURIDAD\n\nIngrese contraseña para modificar el rango:");
+                if (pwd === ADMIN_PASSWORD) {
+                    intruderConfig.locked = false;
+                    localStorage.setItem('inv_config_v25', JSON.stringify(intruderConfig));
+                    updateLockUI();
+                    alert("Rango desbloqueado.");
+                } else if (pwd !== null) {
+                    alert("Contraseña incorrecta.");
+                }
+                return;
+            }
+
+            const start = parseInt(document.getElementById('intruder-start').value);
+            const end = parseInt(document.getElementById('intruder-end').value);
+
+            if (!start || !end || start >= end) {
+                alert("Rango inválido. El inicio debe ser menor al fin.");
+                return;
+            }
+
+            if(confirm(`¿Fijar rango de intrusos (${start} - ${end})?\n\nSe bloqueará la edición para evitar errores.`)) {
+                intruderConfig.start = start;
+                intruderConfig.end = end;
+                intruderConfig.locked = true;
+                localStorage.setItem('inv_config_v25', JSON.stringify(intruderConfig));
+                updateLockUI();
+            }
+        }
+
+        function updateLockUI() {
+            const startInput = document.getElementById('intruder-start');
+            const endInput = document.getElementById('intruder-end');
+            const btn = document.getElementById('btn-lock-range');
+
+            if (intruderConfig.locked) {
+                startInput.disabled = true;
+                endInput.disabled = true;
+                btn.innerHTML = "<span></span> BLOQ";
+                btn.classList.add('locked');
+            } else {
+                startInput.disabled = false;
+                endInput.disabled = false;
+                btn.innerHTML = "<span></span> FIJAR";
+                btn.classList.remove('locked');
+            }
+        }
+
+        function switchView(view) {
+            document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(e => e.classList.remove('active'));
+            document.getElementById(`view-${view}`).classList.add('active');
+            
+            const btns = document.querySelectorAll('.tab-btn');
+            if(view === 'conteo') btns[0].classList.add('active');
+            else btns[1].classList.add('active');
+        }
+
+        function cleanString(str) {
+            if (!str) return "";
+            return str.replace(/[\x00-\x1F\x7F]/g, "").trim().toUpperCase();
+        }
+
+        // --- VALIDACIONES DE FLUJO ---
+        function checkLocation() {
+            const ubi = cleanString(document.getElementById('location').value);
+            if (!ubi) return false;
+
+            if (ubi.startsWith("INV")) {
+                const isDuplicate = records.some(r => r.location === ubi);
+                if (isDuplicate) {
+                    showAlert('Ubicación Duplicada', `La ubicación ${ubi} YA FUE CONTADA.`, null, true);
+                    playSound('error');
+                    document.getElementById('location').value = '';
+                    return false;
+                }
+                return true;
+            }
+
+            if (masterData.size > 0 && !masterData.has(ubi)) {
+                showAlert('Ubicación Desconocida', `La ubicación ${ubi} NO EXISTE en el archivo maestro.`, null, true);
+                playSound('error');
+                document.getElementById('location').classList.add('error-shake');
+                setTimeout(() => document.getElementById('location').classList.remove('error-shake'), 400);
+                document.getElementById('location').value = '';
+                return false;
+            }
+
+            const zoneFilter = cleanString(document.getElementById('zone-filter').value);
+            if (zoneFilter && !ubi.startsWith(zoneFilter)) {
+                showAlert('Zona Incorrecta', `La ubicación ${ubi} no coincide con la zona ${zoneFilter}.`, null, true);
+                playSound('error');
+                document.getElementById('location').classList.add('error-shake');
+                setTimeout(() => document.getElementById('location').classList.remove('error-shake'), 400);
+                document.getElementById('location').value = '';
+                return false;
+            }
+
+            const isDuplicate = records.some(r => r.location === ubi);
+            if (isDuplicate) {
+                showAlert('Ubicación Duplicada', `La ubicación ${ubi} YA FUE CONTADA.\nPara volver a contarla, elimine primero el registro desde el Historial.`, null, true);
+                playSound('error');
+                document.getElementById('location').classList.add('error-shake');
+                setTimeout(() => document.getElementById('location').classList.remove('error-shake'), 400);
+                document.getElementById('location').value = ''; 
+                return false;
+            }
+
+            return true;
+        }
+
+        // --- MANEJO DE INTRUSOS ---
+        function handleIntruderRegistration() {
+            const start = intruderConfig.locked ? intruderConfig.start : (parseInt(document.getElementById('intruder-start').value) || 1);
+            const end = intruderConfig.locked ? intruderConfig.end : (parseInt(document.getElementById('intruder-end').value) || 300);
+            
+            let found = null;
+            for(let i = start; i <= end; i++) {
+                const candidate = "INV" + String(i).padStart(3, '0');
+                const exists = records.some(r => r.location === candidate);
+                if (!exists) {
+                    found = candidate;
+                    break;
+                }
+            }
+            
+            if (!found) {
+                alert("No hay ubicaciones INV disponibles en el rango (" + start + "-" + end + ").");
+                return;
+            }
+
+            const rawMat = document.getElementById('material').value; 
+            const cleanMat = cleanString(rawMat);
+            const user = cleanString(document.getElementById('user').value);
+
+            closeModal(); 
+
+            currentIntruderData = {
+                location: found,
+                material: cleanMat,
+                user: user
+            };
+
+            document.getElementById('intruder-location-display').innerText = found;
+            document.getElementById('intruder-material-display').innerText = cleanMat;
+            document.getElementById('intruder-qty-input').value = '';
+            
+            document.getElementById('intruder-modal-overlay').style.display = 'flex';
+            setTimeout(() => document.getElementById('intruder-qty-input').focus(), 100);
+        }
+
+        function closeIntruderModal() {
+            document.getElementById('intruder-modal-overlay').style.display = 'none';
+            currentIntruderData = null;
+        }
+
+        function confirmIntruderSave() {
+            const qtyVal = parseFloat(document.getElementById('intruder-qty-input').value);
+            
+            if (isNaN(qtyVal)) {
+                alert("Por favor ingrese una cantidad válida.");
+                return;
+            }
+
+            if (!currentIntruderData) return;
+
+            const record = {
+                id: Date.now(),
+                date: new Date().toLocaleDateString(),
+                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}),
+                user: currentIntruderData.user, 
+                location: currentIntruderData.location, 
+                material: currentIntruderData.material, 
+                storage: '', 
+                doc: 'INTRUSO',         
+                qty: qtyVal, 
+                theoretical: 0, 
+                status: 'INTRUSO_UBI', 
+                diff: qtyVal
+            };
+
+            records.unshift(record);
+            localStorage.setItem('inv_data_v25', JSON.stringify(records));
+            renderTable();
+
+            closeIntruderModal();
+            playSound('success'); 
+
+            document.getElementById('material').value = '';
+            document.getElementById('qty').value = '';
+            document.getElementById('material').focus();
+        }
+
+        // --- VALIDAR MATERIAL ---
+        function verifyMaterialBeforeQty(onSuccess) {
+            const ubi = cleanString(document.getElementById('location').value);
+            const rawMat = document.getElementById('material').value; 
+            const cleanMat = cleanString(rawMat);
+
+            if (!cleanMat) return; 
+
+            if (!ubi) {
+                showAlert('Falta Ubicación', 'Ingrese ubicación antes del material.', null, true);
+                return;
+            }
+            
+            if (ubi.startsWith("INV")) {
+                onSuccess();
+                return;
+            }
+
+            const masterRecord = masterData.get(ubi);
+            if (!masterRecord) {
+                onSuccess();
+                return;
+            }
+
+            const matchExpected = findMatchBy9(cleanMat, masterRecord.mat);
+
+            if (matchExpected) {
+                onSuccess();
+            } else {
+                let msg = `El material escaneado NO coincide con el esperado para esta ubicación.\n\nEsperado: ${masterRecord.mat}`;
+                
+                let globalMatch = null;
+                for (let code of MASTER_CODES) {
+                    if (findMatchBy9(cleanMat, code)) {
+                        globalMatch = code;
+                        break;
+                    }
+                }
+                if (globalMatch) {
+                    msg += `\n(Nota: Coincide con otro material del maestro: ${globalMatch})`;
+                }
+
+                playSound('error');
+                
+                showAlert('Material Inesperado', msg, 
+                    () => { 
+                        closeModal(); 
+                        onSuccess();
+                    }, 
+                    true,
+                    () => { 
+                        handleIntruderRegistration();
+                    }
+                );
+            }
+        }
+
+        function setupAutoAdvance(currentId, nextId, validationType) {
+            const el = document.getElementById(currentId);
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if(el.value.trim() !== '') {
+                        
+                        playSound('beep');
+
+                        if (validationType === 'location') {
+                             if (!checkLocation()) return;
+                             document.getElementById(nextId).focus();
+                        } 
+                        else if (validationType === 'material') {
+                             verifyMaterialBeforeQty(() => document.getElementById(nextId).focus());
+                        }
+                        else if (validationType === 'save') {
+                             validateAndSave();
+                        }
+                        else {
+                             document.getElementById(nextId).focus();
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- MAESTRO ---
+        function processMasterFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const lines = e.target.result.split(/\r\n|\n/);
+                masterData.clear();
+                MASTER_CODES.clear();
+                let count = 0;
+                const sep = lines[0].indexOf(';') > -1 ? ';' : ',';
+                
+                lines.forEach(l => {
+                    const c = l.split(sep).map(x => x.trim().replace(/^"|"$/g, '').toUpperCase());
+                    if (c.length >= 3 && c[0]) {
+                        const matCode = c[1];
+                        masterData.set(c[0], { 
+                            mat: matCode, 
+                            stock: parseFloat(c[2]) || 0, 
+                            mat9: matCode.substring(0,9), 
+                            storage: c[3] || '',
+                            doc: c[4] || ''
+                        });
+                        MASTER_CODES.add(matCode); 
+                        count++;
+                    }
+                });
+                
+                document.getElementById('master-alert-box').style.display = 'none';
+                document.getElementById('master-success-box').style.display = 'flex';
+                document.getElementById('master-info-text').innerText = `Maestro cargado: ${count} registros.`;
+                playSound('success');
+            };
+            reader.readAsText(file, 'ISO-8859-1');
+        }
+
+        // --- MATCHING ---
+        function findMatchBy9(cleanScanned, candidateMaster) {
+            if (cleanScanned.length >= 9 && candidateMaster.length >= 9) {
+                const scanPrefix = cleanScanned.substring(0, 9);
+                const masterPrefix = candidateMaster.substring(0, 9);
+                if (scanPrefix === masterPrefix) {
+                    return candidateMaster;
+                }
+            }
+            return null;
+        }
+
+        // --- GUARDADO ---
+        function validateAndSave() {
+            if (masterData.size === 0) {
+                showAlert('Error Crítico', 'Es OBLIGATORIO cargar el maestro.', null, true);
+                playSound('error');
+                return;
+            }
+
+            const ubi = cleanString(document.getElementById('location').value);
+            const rawMat = document.getElementById('material').value; 
+            const cleanMat = cleanString(rawMat); 
+            const qtyStr = document.getElementById('qty').value;
+            const qty = parseFloat(qtyStr);
+            const user = cleanString(document.getElementById('user').value);
+            
+            if (!user) {
+                showAlert('Datos Faltantes', 'El nombre de usuario es obligatorio.', null, true);
+                return;
+            }
+
+            if (!checkLocation()) return; 
+
+            // VACÍOS
+            const master = masterData.get(ubi);
+
+            if (master && !cleanMat && !ubi.startsWith("INV")) {
+                
+                const expectedMat = master.mat;
+                const theoretical = master.stock;
+                const zeroQty = 0;
+                const diff = zeroQty - theoretical;
+
+                let msg = `UBICACIÓN VACÍA / MATERIAL FALTANTE\n\nSe registrará el material esperado: ${expectedMat}\nConteo: 0\nDiferencia: ${diff}`;
+
+                pendingSaveData = {
+                    id: Date.now(),
+                    date: new Date().toLocaleDateString(),
+                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}),
+                    user: user, 
+                    location: ubi, 
+                    material: expectedMat, 
+                    storage: master.storage, 
+                    doc: master.doc,         
+                    qty: zeroQty, 
+                    theoretical: theoretical, 
+                    status: 'VACIO', 
+                    diff: diff
+                };
+
+                showAlert('Confirmar Faltante', msg, confirmSave, true);
+                playSound('error');
+                return;
+            }
+
+            if (!cleanMat || isNaN(qty)) {
+                showAlert('Datos Faltantes', 'Complete todos los campos.', null);
+                return;
+            }
+
+            let status = 'OK';
+            let diff = null;
+            let theoretical = null;
+            let finalMaterial = cleanMat; 
+            let finalStorage = '';
+            let finalDoc = '';
+
+            if (ubi.startsWith("INV")) {
+                status = 'INTRUSO_UBI';
+                let globalMatch = null;
+                for (let code of MASTER_CODES) {
+                    if (findMatchBy9(cleanMat, code)) {
+                        globalMatch = code;
+                        break;
+                    }
+                }
+                finalMaterial = globalMatch ? globalMatch : cleanMat;
+                diff = null; 
+                theoretical = null;
+            } 
+            else if (!master) {
+                status = 'ERROR';
+                diff = qty;
+            } 
+            else {
+                finalStorage = master.storage;
+                finalDoc = master.doc;
+                
+                const matchExpected = findMatchBy9(cleanMat, master.mat); 
+
+                if (matchExpected) {
+                    finalMaterial = matchExpected; 
+                    theoretical = master.stock;
+                    diff = qty - theoretical;
+                    status = 'OK';
+                } else {
+                    status = 'INTRUSO_MAT';
+                    let msg = `Material incorrecto. Esperado: ${master.mat}`;
+                    isAlert = true;
+                    finalMaterial = cleanMat; 
+                    diff = null;
+                    theoretical = null; 
+                }
+            }
+
+            const record = {
+                id: Date.now(),
+                date: new Date().toLocaleDateString(),
+                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}),
+                user: user, location: ubi, 
+                material: finalMaterial, 
+                storage: finalStorage, 
+                doc: finalDoc,         
+                qty: qty, 
+                theoretical: theoretical, 
+                status: status, 
+                diff: diff
+            };
+
+            // ALERTA DE DISCREPANCIA (AHORA CON OPCIÓN DE INTRUSO)
+            if (status === 'INTRUSO_MAT') {
+                let msg = `Material incorrecto. Esperado: ${master.mat}`;
+                // Buscar si existe en otro lado para dar feedback
+                let globalMatch = null;
+                for (let code of MASTER_CODES) {
+                    if (findMatchBy9(cleanMat, code)) { globalMatch = code; break; }
+                }
+                if (globalMatch) msg += `\n(Nota: Coincide con otro material: ${globalMatch})`;
+
+                pendingSaveData = record;
+                
+                showAlert('Discrepancia', msg + ' ¿Guardar igual?', 
+                    confirmSave, // Acción Confirmar
+                    true, 
+                    handleIntruderRegistration // Acción Intruso
+                );
+                playSound('error');
+            } else {
+                saveRecord(record);
+                playSound('success');
+            }
+        }
+
+        function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+
+        function confirmSave() {
+            if (pendingSaveData) {
+                saveRecord(pendingSaveData);
+                pendingSaveData = null;
+                closeModal();
+                playSound('success');
+            }
+        }
+
+        function saveRecord(record) {
+            records.unshift(record);
+            localStorage.setItem('inv_data_v25', JSON.stringify(records));
+            renderTable();
+            clearForm(true);
+            document.getElementById('location').focus();
+        }
+
+        function clearForm(keepSettings = false) {
+            document.getElementById('location').value = '';
+            document.getElementById('material').value = '';
+            document.getElementById('qty').value = '';
+        }
+
+        function clearHistory() {
+            records = [];
+            localStorage.removeItem('inv_data_v25');
+            renderTable();
+        }
+
+        window.deleteRecord = function(id) {
+            if(confirm('¿Eliminar esta línea?')) {
+                records = records.filter(r => String(r.id) !== String(id));
+                localStorage.setItem('inv_data_v25', JSON.stringify(records));
+                renderTable();
+            }
+        };
+
+        function resetAllProtected() {
+            if (records.length === 0) return alert("No hay datos para borrar.");
+            
+            const pwd = prompt("⚠️ ACCIÓN DESTRUCTIVA ⚠️\n\nIngrese la contraseña de supervisor para borrar todo el historial:");
+            
+            if (pwd === ADMIN_PASSWORD) {
+                clearHistory();
+                alert("Historial eliminado correctamente.");
+            } else if (pwd !== null) {
+                alert("Contraseña incorrecta.");
+            }
+        }
+
+        async function sendByEmail() {
+            if (records.length === 0) return alert("No hay datos para enviar.");
+            
+            const performClear = () => {
+                clearHistory();
+            };
+
+            let csv = "Fecha,Hora,Usuario,Ubicacion,Material,Doc_Inventario,Storage,Stock_Teorico,Stock_Fisico,Diferencia,Estado\n";
+            records.forEach(r => csv += `${r.date},${r.time},${r.user},${r.location},${r.material},${r.doc || ''},${r.storage || ''},${r.theoretical !== null ? r.theoretical : ''},${r.qty},${r.diff !== null ? r.diff : ''},${r.status}\n`);
+            
+            const file = new File([csv], `Inventario_${Date.now()}.csv`, { type: "text/csv" });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        title: 'Reporte de Inventario',
+                        text: `Adjunto el reporte de inventario.\n\nPara: ${EMAIL_RECIPIENTS}`,
+                        files: [file]
+                    });
+                    performClear();
+                } catch (err) {
+                    console.log("Compartir cancelado o fallido", err);
+                }
+            } else {
+                exportCSV();
+                const mailtoLink = `mailto:${EMAIL_RECIPIENTS}?subject=Reporte Inventario&body=El archivo CSV ha sido descargado en su dispositivo. Por favor adjúntelo manualmente.`;
+                window.location.href = mailtoLink;
+                setTimeout(performClear, 1000);
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('records-body');
+            document.getElementById('count-badge').innerText = records.length;
+            tbody.innerHTML = '';
+            records.forEach(r => {
+                const tr = document.createElement('tr');
+                const badgeClass = r.status === 'OK' ? 'bg-ok' : (r.status === 'VACIO' ? 'bg-empty' : 'bg-err');
+                
+                tr.innerHTML = `
+                    <td style="font-size:11px; color:#666">${r.date}</td>
+                    <td style="font-weight:700">${r.location}</td>
+                    <td>${r.material}</td>
+                    <td style="font-size:12px;">${r.doc || '-'}</td>
+                    <td style="font-size:12px;">${r.storage || '-'}</td>
+                    <td style="text-align:center; font-weight:bold">${r.qty}</td>
+                    <td><span class="status-badge ${badgeClass}">${r.status}</span></td>
+                    <td><button class="btn-delete" onclick="deleteRecord('${r.id}')">🗑️</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function showAlert(title, msg, confirmCallback, isError = false, intruderCallback = null) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-msg').innerText = msg;
+            const btnConfirm = document.getElementById('modal-confirm-btn');
+            const btnIntruder = document.getElementById('modal-intruder-btn');
+            const box = document.getElementById('modal-box');
+            
+            if (isError) {
+                box.classList.add('error-mode');
+                document.getElementById('modal-icon').innerText = '⛔';
+            } else {
+                box.classList.remove('error-mode');
+                document.getElementById('modal-icon').innerText = '⚠️';
+            }
+
+            if (confirmCallback) {
+                btnConfirm.style.display = 'block';
+                btnConfirm.onclick = confirmCallback;
+                btnConfirm.innerText = "SI, GUARDAR AQUÍ";
+            } else {
+                btnConfirm.style.display = 'none';
+            }
+
+            if (intruderCallback) {
+                btnIntruder.style.display = 'block';
+                btnIntruder.onclick = intruderCallback;
+            } else {
+                btnIntruder.style.display = 'none';
+            }
+
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+
+        function exportCSV() {
+            if (!records.length) return;
+            let csv = "Fecha,Hora,Usuario,Ubicacion,Material,Doc_Inventario,Storage,Stock_Teorico,Stock_Fisico,Diferencia,Estado\n";
+            records.forEach(r => csv += `${r.date},${r.time},${r.user},${r.location},${r.material},${r.doc || ''},${r.storage || ''},${r.theoretical !== null ? r.theoretical : ''},${r.qty},${r.diff !== null ? r.diff : ''},${r.status}\n`);
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `Inv_${Date.now()}.csv`; a.click();
+            clearHistory();
+        }
+
+        async function checkBarcodeSupport() {
+            if ('BarcodeDetector' in window) barcodeDetector = new BarcodeDetector({ formats: ['code_128', 'code_39', 'ean_13', 'qr_code'] });
+        }
+
+        async function startCamera(targetId) {
+            if (masterData.size === 0) {
+                showAlert('Error', 'Debe cargar el maestro primero.', null, true);
+                return;
+            }
+            scanningTarget = document.getElementById(targetId);
+            
+            if (forcePhotoFallback) {
+                usePhotoFallback();
+                return;
+            }
+
+            if (!barcodeDetector) { 
+                usePhotoFallback();
+                return; 
+            }
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                document.getElementById('camera-container').style.display = 'block';
+                scanFrame();
+            } catch (e) { 
+                console.log("Error Video Vivo:", e);
+                if (e.name === 'NotAllowedError' || e.name === 'SecurityError' || e.name === 'NotFoundError') {
+                    if(confirm("El navegador bloqueó la cámara en vivo (seguridad de archivos locales). ¿Usar modo FOTO permanentemente?")) {
+                        forcePhotoFallback = true; 
+                        usePhotoFallback();
+                    }
+                } else {
+                   alert('Error cámara: ' + e); 
+                }
+            }
+        }
+
+        function usePhotoFallback() {
+            document.getElementById('scan-fallback').click();
+        }
+
+        async function handleFallbackImage(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            
+            if (!barcodeDetector) {
+                alert("Su dispositivo no tiene tecnología de lectura de códigos en fotos.");
+                return;
+            }
+
+            try {
+                const bitmap = await createImageBitmap(file);
+                const codes = await barcodeDetector.detect(bitmap);
+                
+                if(codes.length > 0) {
+                    scanningTarget.value = codes[0].rawValue;
+                    playSound('beep');
+                    
+                    if (scanningTarget.id === 'location') {
+                        if (!checkLocation()) return; 
+                        document.getElementById('material').focus();
+                    }
+                    else if (scanningTarget.id === 'material') {
+                        verifyMaterialBeforeQty(() => document.getElementById('qty').focus());
+                    }
+                } else {
+                    alert("No se detectó ningún código en la foto. Intente acercarse más.");
+                }
+            } catch(err) {
+                alert("Error procesando imagen: " + err);
+            }
+            e.target.value = '';
+        }
+
+        function stopCamera() {
+            const video = document.getElementById('video');
+            if(video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+            document.getElementById('camera-container').style.display = 'none';
+        }
+
+        async function scanFrame() {
+            const video = document.getElementById('video');
+            if (document.getElementById('camera-container').style.display === 'none') return;
+            try {
+                const codes = await barcodeDetector.detect(video);
+                if (codes.length > 0) {
+                    scanningTarget.value = codes[0].rawValue;
+                    stopCamera();
+                    playSound('beep');
+                    
+                    if (scanningTarget.id === 'location') {
+                        if (!checkLocation()) return; 
+                        document.getElementById('material').focus();
+                    }
+                    else if (scanningTarget.id === 'material') {
+                        verifyMaterialBeforeQty(() => document.getElementById('qty').focus());
+                    }
+
+                } else { requestAnimationFrame(scanFrame); }
+            } catch { requestAnimationFrame(scanFrame); }
+        }
+
+        function playSound(type) {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            if (type === 'error') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, ctx.currentTime);
+                gain.gain.setValueAtTime(0.2, ctx.currentTime); osc.start(); osc.stop(ctx.currentTime + 0.3);
+            } else {
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime); osc.start(); osc.stop(ctx.currentTime + 0.1);
+            }
+        }
+    </script>
+</body>
+</html>

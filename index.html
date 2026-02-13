@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0D2334">
-    <title>Inventario Pro - V25 (Final)</title>
+    <title>InventarioApp - V27 (Multi-Formato)</title>
     <style>
         /* --- IDENTIDAD VISUAL --- */
         :root {
@@ -327,6 +327,7 @@
                 <table id="records-table">
                     <thead>
                         <tr>
+                            <!-- TEÓRICO ELIMINADO DE LA VISTA -->
                             <th>Fecha</th>
                             <th>Ubicación</th>
                             <th>Material</th>
@@ -350,7 +351,7 @@
             <div class="modal-title" id="modal-title">Atención</div>
             <div class="modal-msg" id="modal-msg">Mensaje de alerta</div>
             <button class="modal-btn danger" id="modal-confirm-btn">Confirmar</button>
-            <!-- Botón Intruso -->
+            <!-- Botón Intruso oculto por defecto -->
             <button class="modal-btn intruder" id="modal-intruder-btn" style="display:none;">REGISTRAR INTRUSO</button>
             <button class="modal-btn cancel" onclick="closeModal()">Cancelar</button>
         </div>
@@ -382,8 +383,8 @@
         let masterData = new Map();
         let MASTER_CODES = new Set(); 
         
-        let records = JSON.parse(localStorage.getItem('inv_data_v25')) || [];
-        let intruderConfig = JSON.parse(localStorage.getItem('inv_config_v25')) || { start: 1, end: 300, locked: false };
+        let records = JSON.parse(localStorage.getItem('inv_data_v26')) || [];
+        let intruderConfig = JSON.parse(localStorage.getItem('inv_config_v26')) || { start: 1, end: 300, locked: false };
 
         let scanningTarget = null;
         let barcodeDetector = null;
@@ -395,6 +396,7 @@
             renderTable();
             checkBarcodeSupport();
             loadIntruderConfig(); 
+            restoreState(); // Restaurar Usuario/Zona y Maestro si existe
             
             setupAutoAdvance('location', 'material', 'location'); 
             setupAutoAdvance('material', 'qty', 'material');
@@ -406,7 +408,48 @@
                 if(e.key === 'Enter') confirmIntruderSave();
             });
             document.getElementById('btn-save-intruder').addEventListener('click', confirmIntruderSave);
+
+            // Listeners para persistencia de campos
+            document.getElementById('user').addEventListener('input', saveState);
+            document.getElementById('zone-filter').addEventListener('input', saveState);
         });
+
+        // --- PERSISTENCIA (NUEVO V26) ---
+        function saveState() {
+            const user = document.getElementById('user').value;
+            const zone = document.getElementById('zone-filter').value;
+            localStorage.setItem('inv_user_v26', user);
+            localStorage.setItem('inv_zone_v26', zone);
+        }
+
+        function restoreState() {
+            // Restaurar inputs
+            const savedUser = localStorage.getItem('inv_user_v26');
+            if(savedUser) document.getElementById('user').value = savedUser;
+
+            const savedZone = localStorage.getItem('inv_zone_v26');
+            if(savedZone) document.getElementById('zone-filter').value = savedZone;
+
+            // Restaurar Maestro
+            const storedMaster = localStorage.getItem('inv_master_data_v26');
+            if (storedMaster) {
+                try {
+                    const parsedArray = JSON.parse(storedMaster);
+                    masterData = new Map(parsedArray);
+                    MASTER_CODES.clear();
+                    for (let [key, val] of masterData) {
+                        MASTER_CODES.add(val.mat);
+                    }
+                    // Update UI
+                    document.getElementById('master-alert-box').style.display = 'none';
+                    document.getElementById('master-success-box').style.display = 'flex';
+                    document.getElementById('master-info-text').innerText = `Maestro recuperado: ${masterData.size} registros.`;
+                } catch(e) {
+                    console.error("Error recuperando maestro", e);
+                    localStorage.removeItem('inv_master_data_v26');
+                }
+            }
+        }
 
         // --- GESTIÓN DE CONFIGURACIÓN INTRUSO (BLOQUEO) ---
         function loadIntruderConfig() {
@@ -417,10 +460,10 @@
 
         function toggleRangeLock() {
             if (intruderConfig.locked) {
-                const pwd = prompt( "SEGURIDAD\n\nIngrese contraseña para modificar el rango:");
+                const pwd = prompt("🔐 SEGURIDAD\n\nIngrese contraseña para modificar el rango:");
                 if (pwd === ADMIN_PASSWORD) {
                     intruderConfig.locked = false;
-                    localStorage.setItem('inv_config_v25', JSON.stringify(intruderConfig));
+                    localStorage.setItem('inv_config_v26', JSON.stringify(intruderConfig));
                     updateLockUI();
                     alert("Rango desbloqueado.");
                 } else if (pwd !== null) {
@@ -441,7 +484,7 @@
                 intruderConfig.start = start;
                 intruderConfig.end = end;
                 intruderConfig.locked = true;
-                localStorage.setItem('inv_config_v25', JSON.stringify(intruderConfig));
+                localStorage.setItem('inv_config_v26', JSON.stringify(intruderConfig));
                 updateLockUI();
             }
         }
@@ -598,7 +641,7 @@
             };
 
             records.unshift(record);
-            localStorage.setItem('inv_data_v25', JSON.stringify(records));
+            localStorage.setItem('inv_data_v26', JSON.stringify(records));
             renderTable();
 
             closeIntruderModal();
@@ -721,6 +764,15 @@
                     }
                 });
                 
+                // SAVE MASTER TO LOCAL STORAGE (Persistencia)
+                try {
+                    const serializedMaster = JSON.stringify(Array.from(masterData.entries()));
+                    localStorage.setItem('inv_master_data_v26', serializedMaster);
+                } catch (e) {
+                    console.warn("Maestro muy grande", e);
+                    alert("Aviso: El archivo es muy grande para la memoria local. Si recarga la página, deberá subirlo nuevamente.");
+                }
+
                 document.getElementById('master-alert-box').style.display = 'none';
                 document.getElementById('master-success-box').style.display = 'flex';
                 document.getElementById('master-info-text').innerText = `Maestro cargado: ${count} registros.`;
@@ -859,22 +911,12 @@
                 diff: diff
             };
 
-            // ALERTA DE DISCREPANCIA (AHORA CON OPCIÓN DE INTRUSO)
-            if (status === 'INTRUSO_MAT') {
-                let msg = `Material incorrecto. Esperado: ${master.mat}`;
-                // Buscar si existe en otro lado para dar feedback
-                let globalMatch = null;
-                for (let code of MASTER_CODES) {
-                    if (findMatchBy9(cleanMat, code)) { globalMatch = code; break; }
-                }
-                if (globalMatch) msg += `\n(Nota: Coincide con otro material: ${globalMatch})`;
-
+            if (isAlert) {
                 pendingSaveData = record;
-                
                 showAlert('Discrepancia', msg + ' ¿Guardar igual?', 
-                    confirmSave, // Acción Confirmar
+                    confirmSave, 
                     true, 
-                    handleIntruderRegistration // Acción Intruso
+                    handleIntruderRegistration
                 );
                 playSound('error');
             } else {
@@ -896,7 +938,7 @@
 
         function saveRecord(record) {
             records.unshift(record);
-            localStorage.setItem('inv_data_v25', JSON.stringify(records));
+            localStorage.setItem('inv_data_v26', JSON.stringify(records));
             renderTable();
             clearForm(true);
             document.getElementById('location').focus();
@@ -910,14 +952,14 @@
 
         function clearHistory() {
             records = [];
-            localStorage.removeItem('inv_data_v25');
+            localStorage.removeItem('inv_data_v26');
             renderTable();
         }
 
         window.deleteRecord = function(id) {
             if(confirm('¿Eliminar esta línea?')) {
                 records = records.filter(r => String(r.id) !== String(id));
-                localStorage.setItem('inv_data_v25', JSON.stringify(records));
+                localStorage.setItem('inv_data_v26', JSON.stringify(records));
                 renderTable();
             }
         };
@@ -1034,7 +1076,7 @@
         }
 
         async function checkBarcodeSupport() {
-            if ('BarcodeDetector' in window) barcodeDetector = new BarcodeDetector({ formats: ['code_128', 'code_39', 'ean_13', 'qr_code'] });
+            if ('BarcodeDetector' in window) barcodeDetector = new BarcodeDetector({ formats: ['code_128', 'code_39', 'ean_13', 'qr_code', 'aztec', 'code_93', 'data_matrix', 'ean_8', 'itf', 'pdf417', 'upc_a', 'upc_e'] });
         }
 
         async function startCamera(targetId) {

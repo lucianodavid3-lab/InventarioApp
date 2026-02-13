@@ -812,7 +812,7 @@
             if (master && !cleanMat && !ubi.startsWith("INV")) {
                 const expectedMat = master.mat;
                 const diff = 0 - master.stock;
-                let msg = `UBICACIÓN VACÍA / FALTANTE\n\nSe registrará: ${expectedMat}\nConteo: 0\nDiferencia: ${diff}`;
+                let msg = `UBICACIÓN VACÍA / FALTANTE\n\nSe registrará: ${expectedMat}\nConteo: 0\n`;
                 pendingSaveData = {
                     id: Date.now(),
                     date: new Date().toLocaleDateString(),
@@ -1188,3 +1188,4 @@
     </script>
 </body>
 </html>
+

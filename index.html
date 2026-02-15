@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0D2334">
-    <title>InventarioApp - V28 Final</title>
+    <title>InventarioApp - V29 Confirmacion</title>
     <style>
         /* --- IDENTIDAD VISUAL --- */
         :root {
@@ -133,6 +133,7 @@
         .btn:active { transform: scale(0.98); }
         .btn-primary { background-color: var(--red-accent); color: white; box-shadow: 0 4px 6px rgba(215, 15, 39, 0.25); }
         .btn-secondary { background-color: var(--input-bg); color: var(--navy-main); }
+        .btn-success { background-color: var(--success); color: white; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.25); }
         .btn-navy { background-color: var(--navy-main); color: white; }
         .btn-email { background-color: var(--success); color: white; } 
         .btn-danger-block { background-color: var(--danger); color: white; }
@@ -160,7 +161,7 @@
         }
 
         /* --- MODAL --- */
-        #modal-overlay, #intruder-modal-overlay {
+        #modal-overlay, #intruder-modal-overlay, #confirm-modal-overlay {
             display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(13, 35, 52, 0.85); z-index: 1000;
             align-items: center; justify-content: center;
@@ -183,6 +184,16 @@
         .modal-btn.danger { background: var(--red-accent); color: white; margin-bottom: 8px; }
         .modal-btn.intruder { background: var(--warning); color: white; margin-bottom: 8px; }
         .modal-btn.cancel { background: var(--input-bg); color: var(--navy-main); }
+
+        /* CONFIRMATION MODAL SPECIFIC */
+        .confirm-data-row {
+            display: flex; justify-content: space-between; border-bottom: 1px solid #eee;
+            padding: 8px 0; font-size: 14px;
+        }
+        .confirm-data-label { color: var(--text-muted); font-weight: 500; }
+        .confirm-data-val { font-weight: 800; color: var(--navy-main); text-align: right; }
+        .confirm-qty { font-size: 24px; color: var(--success); font-weight: 900; padding: 10px 0; display: block; }
+        .confirm-actions { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 20px; }
 
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
@@ -306,7 +317,7 @@
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
                 <button class="btn btn-secondary" onclick="clearForm()">LIMPIAR</button>
-                <button class="btn btn-primary" onclick="validateAndSave()">GUARDAR</button>
+                <button class="btn btn-primary" onclick="validateAndSave()">VALIDAR</button>
             </div>
         </div>
     </div>
@@ -344,7 +355,7 @@
         </div>
     </div>
 
-    <!-- MODAL DE ALERTA GENERAL -->
+    <!-- MODAL DE ALERTA GENERAL (ERRORES/WARNINGS) -->
     <div id="modal-overlay">
         <div class="modal-box" id="modal-box">
             <div id="modal-icon" style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
@@ -357,7 +368,7 @@
         </div>
     </div>
 
-    <!-- MODAL ESPECÍFICO PARA INTRUSO -->
+    <!-- MODAL ESPECÍFICO PARA REGISTRAR INTRUSO (CAMBIAR UBI) -->
     <div id="intruder-modal-overlay">
         <div class="modal-box">
             <div class="modal-title">REGISTRAR INTRUSO</div>
@@ -374,6 +385,36 @@
         </div>
     </div>
 
+    <!-- MODAL DE CONFIRMACIÓN FINAL (GOAL 2) -->
+    <div id="confirm-modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title" style="color:var(--success); font-size:20px;">CONFIRMAR CONTEO</div>
+            
+            <div style="margin: 20px 0;">
+                <div class="confirm-data-row">
+                    <span class="confirm-data-label">Ubicación</span>
+                    <span class="confirm-data-val" id="conf-loc">---</span>
+                </div>
+                <div class="confirm-data-row">
+                    <span class="confirm-data-label">Material</span>
+                    <span class="confirm-data-val" id="conf-mat">---</span>
+                </div>
+                 <div class="confirm-data-row">
+                    <span class="confirm-data-label">Estado</span>
+                    <span class="confirm-data-val" id="conf-status">OK</span>
+                </div>
+                
+                <span class="confirm-qty" id="conf-qty">0</span>
+            </div>
+
+            <div class="confirm-actions">
+                <button class="btn btn-success" id="btn-final-confirm">✓ CONFIRMAR</button>
+                <button class="btn btn-secondary" onclick="closeConfirmModal(true)">✎ EDITAR</button>
+                <button class="btn btn-delete" style="width:100%; background-color:#FEF2F2; color:#991B1B;" onclick="closeConfirmModal(false)">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- CONFIGURACIÓN ---
         const ADMIN_PASSWORD = "cargo123";
@@ -383,13 +424,14 @@
         let masterData = new Map();
         let MASTER_CODES = new Set(); 
         
-        // UNIFICAMOS KEYS PARA V28 FINAL
+        // UNIFICAMOS KEYS PARA V29
         let records = JSON.parse(localStorage.getItem('inv_data_final')) || [];
         let intruderConfig = JSON.parse(localStorage.getItem('inv_config_final')) || { start: 1, end: 300, locked: false };
 
         let scanningTarget = null;
         let barcodeDetector = null;
-        let pendingSaveData = null;
+        let pendingSaveData = null; // Para la alerta intermedia
+        let finalConfirmData = null; // Para la confirmación final
         let forcePhotoFallback = false; 
         let currentIntruderData = null;
 
@@ -409,6 +451,7 @@
                 if(e.key === 'Enter') confirmIntruderSave();
             });
             document.getElementById('btn-save-intruder').addEventListener('click', confirmIntruderSave);
+            document.getElementById('btn-final-confirm').addEventListener('click', performFinalSave);
 
             document.getElementById('user').addEventListener('input', saveState);
             document.getElementById('zone-filter').addEventListener('input', saveState);
@@ -519,6 +562,18 @@
             return str.replace(/[\x00-\x1F\x7F]/g, "").trim().toUpperCase();
         }
 
+        // --- HELPER PARA BUSCAR INFO DE MATERIAL EN MAESTRO (GOAL 1) ---
+        function findMasterRecordByMaterial(cleanMat) {
+            // Busca en todo el maestro un registro que coincida con el material
+            for (let [key, val] of masterData) {
+                // Chequeo exacto o por 9 caracteres
+                if (val.mat === cleanMat || (val.mat9 && val.mat9 === cleanMat.substring(0,9))) {
+                    return val;
+                }
+            }
+            return null;
+        }
+
         // --- VALIDACIONES ---
         function checkLocation() {
             const ubi = cleanString(document.getElementById('location').value);
@@ -591,7 +646,7 @@
             const cleanMat = cleanString(rawMat);
             const user = cleanString(document.getElementById('user').value);
 
-            closeModal(); 
+            closeModal(); // Cierra alerta previa
 
             currentIntruderData = {
                 location: found,
@@ -620,6 +675,9 @@
             }
             if (!currentIntruderData) return;
 
+            // BUSCAR INFO REAL DEL MATERIAL (Goal 1 en Intruso-cambio-ubi)
+            const realInfo = findMasterRecordByMaterial(currentIntruderData.material);
+            
             const record = {
                 id: Date.now(),
                 date: new Date().toLocaleDateString(),
@@ -627,26 +685,19 @@
                 user: currentIntruderData.user, 
                 location: currentIntruderData.location, 
                 material: currentIntruderData.material, 
-                storage: '', 
-                doc: 'INTRUSO',         
+                storage: realInfo ? realInfo.storage : '', 
+                doc: realInfo ? realInfo.doc : 'INTRUSO', // Si encuentra, usa el doc real          
                 qty: qtyVal, 
                 theoretical: 0, 
                 status: 'INTRUSO_UBI', 
                 diff: qtyVal
             };
-
-            records.unshift(record);
-            try {
-                localStorage.setItem('inv_data_final', JSON.stringify(records));
-            } catch (e) { alert("Error de almacenamiento local (Storage Full)"); }
-            renderTable();
-
+            
+            // Pasar directamente a guardado final (o confirmación)
+            // Como ya está en un modal "Guardar Intruso", asumimos confirmación implícita, 
+            // PERO para ser consistentes con V29, mostraremos la confirmación final también.
             closeIntruderModal();
-            playSound('success'); 
-
-            document.getElementById('material').value = '';
-            document.getElementById('qty').value = '';
-            document.getElementById('material').focus();
+            showConfirmationModal(record);
         }
 
         // --- VALIDAR MATERIAL ---
@@ -785,7 +836,7 @@
             return null;
         }
 
-        // --- GUARDADO ---
+        // --- LÓGICA DE VALIDACIÓN Y CONFIRMACIÓN ---
         function validateAndSave() {
             if (masterData.size === 0) {
                 showAlert('Error Crítico', 'Cargar maestro.', null, true);
@@ -807,7 +858,7 @@
 
             if (!checkLocation()) return; 
 
-            // VACÍOS
+            // CASO: VACÍOS / FALTANTE
             const master = masterData.get(ubi);
             if (master && !cleanMat && !ubi.startsWith("INV")) {
                 const expectedMat = master.mat;
@@ -818,11 +869,11 @@
                     date: new Date().toLocaleDateString(),
                     time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}),
                     user: user, location: ubi, material: expectedMat, 
-                    storage: master.storage, doc: master.doc,         
+                    storage: master.storage, doc: master.doc,          
                     qty: 0, theoretical: master.stock, 
                     status: 'VACIO', diff: diff
                 };
-                showAlert('Confirmar Faltante', msg, confirmSave, true);
+                showAlert('Confirmar Faltante', msg, processPendingToConfirm, true);
                 playSound('error');
                 return;
             }
@@ -839,13 +890,23 @@
             let finalStorage = '';
             let finalDoc = '';
 
+            // Lógica principal
             if (ubi.startsWith("INV")) {
                 status = 'INTRUSO_UBI';
-                let globalMatch = null;
-                for (let code of MASTER_CODES) {
-                    if (findMatchBy9(cleanMat, code)) { globalMatch = code; break; }
+                // GOAL 1: Buscar data real aunque sea INTRUSO_UBI
+                const realInfo = findMasterRecordByMaterial(cleanMat);
+                if (realInfo) {
+                    finalMaterial = realInfo.mat; // Usar nombre completo del maestro si hay match parcial
+                    finalStorage = realInfo.storage;
+                    finalDoc = realInfo.doc;
+                } else {
+                     // Intento fallback match simple
+                    let globalMatch = null;
+                    for (let code of MASTER_CODES) {
+                        if (findMatchBy9(cleanMat, code)) { globalMatch = code; break; }
+                    }
+                    finalMaterial = globalMatch ? globalMatch : cleanMat;
                 }
-                finalMaterial = globalMatch ? globalMatch : cleanMat;
                 diff = null; theoretical = null;
             } 
             else if (!master) {
@@ -853,6 +914,7 @@
                 diff = qty;
             } 
             else {
+                // Hay Master y es ubicación normal
                 finalStorage = master.storage;
                 finalDoc = master.doc;
                 const matchExpected = findMatchBy9(cleanMat, master.mat); 
@@ -865,6 +927,7 @@
                 } else {
                     status = 'INTRUSO_MAT';
                     let msg = `Material incorrecto. Esperado: ${master.mat}`;
+                    
                     // Buscar coincidencia global para ayudar
                     let globalMatch = null;
                     for (let code of MASTER_CODES) {
@@ -872,21 +935,30 @@
                     }
                     if (globalMatch) msg += `\n(Coincide con: ${globalMatch})`;
 
-                    // Preparamos el record preliminar
+                    // GOAL 1: Si decido guardar igual, buscar la info REAL de este material
+                    // Buscamos en todo el maestro la info del material escaneado (cleanMat)
+                    const realInfo = findMasterRecordByMaterial(cleanMat);
+                    
+                    // Si encontramos el material real, preparamos sus datos para el "guardar igual"
+                    const saveStorage = realInfo ? realInfo.storage : '';
+                    const saveDoc = realInfo ? realInfo.doc : 'EXTRA'; // Si no está en maestro, es EXTRA
+                    const saveMatName = realInfo ? realInfo.mat : cleanMat;
+
                     pendingSaveData = {
                         id: Date.now(),
                         date: new Date().toLocaleDateString(),
                         time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}),
                         user: user, location: ubi, 
-                        material: cleanMat, 
-                        storage: finalStorage, doc: finalDoc,         
+                        material: saveMatName, 
+                        storage: saveStorage, // USAMOS LA INFO CORREGIDA
+                        doc: saveDoc,         // USAMOS LA INFO CORREGIDA
                         qty: qty, theoretical: null, status: status, diff: null
                     };
 
                     showAlert('Discrepancia', msg + ' ¿Guardar igual?', 
-                        confirmSave, 
+                        processPendingToConfirm, 
                         true, 
-                        handleIntruderRegistration // BOTÓN INTRUSO RESTAURADO
+                        handleIntruderRegistration
                     );
                     playSound('error');
                     return; 
@@ -899,34 +971,70 @@
                 time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}),
                 user: user, location: ubi, 
                 material: finalMaterial, 
-                storage: finalStorage, doc: finalDoc,         
+                storage: finalStorage, doc: finalDoc,          
                 qty: qty, theoretical: theoretical, 
                 status: status, diff: diff
             };
 
-            saveRecord(record);
-            playSound('success');
+            // GOAL 2: En vez de guardar directo, mostrar confirmación
+            showConfirmationModal(record);
         }
 
-        function confirmSave() {
+        // Función puente: Si el usuario acepta una alerta (Intruso/Vacío), 
+        // pasamos los datos pendientes a la pantalla de confirmación.
+        function processPendingToConfirm() {
             if (pendingSaveData) {
-                saveRecord(pendingSaveData);
+                closeModal(); // Cerrar alerta de error
+                showConfirmationModal(pendingSaveData);
                 pendingSaveData = null;
-                closeModal();
-                playSound('success');
             }
         }
 
-        function saveRecord(record) {
-            records.unshift(record);
+        // --- GOAL 2: PANTALLA DE CONFIRMACIÓN ---
+        function showConfirmationModal(record) {
+            finalConfirmData = record; // Guardar datos temporalmente
+            
+            document.getElementById('conf-loc').innerText = record.location;
+            document.getElementById('conf-mat').innerText = record.material;
+            document.getElementById('conf-qty').innerText = record.qty;
+            document.getElementById('conf-status').innerText = record.status;
+            
+            // Color según status
+            const statusEl = document.getElementById('conf-status');
+            if(record.status === 'OK') statusEl.style.color = 'var(--success)';
+            else if(record.status === 'VACIO') statusEl.style.color = '#64748B';
+            else statusEl.style.color = 'var(--danger)';
+
+            document.getElementById('confirm-modal-overlay').style.display = 'flex';
+            document.getElementById('btn-final-confirm').focus();
+        }
+
+        function closeConfirmModal(isEdit) {
+            document.getElementById('confirm-modal-overlay').style.display = 'none';
+            if (!isEdit) {
+                // Si es cancelar puro, limpiamos datos temporales
+                finalConfirmData = null;
+                // Opcional: limpiar form si cancela
+                // clearForm(); 
+            }
+            // Si es editar, simplemente cerramos el modal y dejamos el form como está
+        }
+
+        function performFinalSave() {
+            if (!finalConfirmData) return;
+
+            records.unshift(finalConfirmData);
             try {
                 localStorage.setItem('inv_data_final', JSON.stringify(records));
             } catch(e) {
-                alert("Error crítico: No se pudo guardar. Memoria llena.");
+                alert("Error crítico: Memoria llena.");
                 return;
             }
+            
             renderTable();
-            clearForm(true);
+            closeConfirmModal(false); // Cerrar y limpiar temp
+            clearForm(true); // Limpiar inputs
+            playSound('success');
             document.getElementById('location').focus();
         }
 
@@ -1188,5 +1296,6 @@
     </script>
 </body>
 </html>
+
 
 
